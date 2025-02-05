@@ -1,0 +1,8 @@
+venv/
+.env
+langchain.ipynb
+.ipynb_checkpoints/langchain-checkpoint.ipynb
+.ipynb_checkpoints/main-checkpoint.py
+.virtual_documents/langchain.ipynb
+langchain.ipynb
+

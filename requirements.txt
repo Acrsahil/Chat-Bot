@@ -1,0 +1,12 @@
+langchain
+numpy
+openai
+huggingface_hub
+streamlit 
+langchain 
+openai 
+faiss-cpu 
+pypdf 
+python-dotenv 
+dateparser
+
