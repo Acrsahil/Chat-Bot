@@ -1,139 +1,212 @@
 import streamlit as st
-import datetime
-import dateparser
-import faiss
-import numpy as np
 import os
-import re
-from langchain.document_loaders import PyPDFLoader
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.llms import HuggingFaceHub
-from tempfile import NamedTemporaryFile
-from dotenv import load_dotenv
-
-# Set Hugging Face API Token (set this in your environment variables)
-load_dotenv()  # Load environment variables from .env
-
-hf_api_token = os.getenv("HF_API_TOKEN")  # Retrieve the token safely
-
-if hf_api_token is None:
-    raise ValueError("HF_API_TOKEN is not set in .env")
-
-# Initialize Hugging Face LLM
-llm = HuggingFaceHub(
-    repo_id="deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
-    model_kwargs={"temperature": 0.6, "max_length": 64},
-    huggingfacehub_api_token=os.getenv("HF_API_TOKEN"),
+import concurrent.futures
+from langchain_community.document_loaders import PDFPlumberLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_ollama import OllamaEmbeddings
+from langchain_ollama.llms import OllamaLLM
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import ChatOllama
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import (
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+    AIMessagePromptTemplate,
 )
 
-vector_store = None
+# Directory to store PDFs
+pdf_dir = "./pdfs/"
+os.makedirs(pdf_dir, exist_ok=True)
 
-st.set_page_config(page_title="📄 AI Chatbot", page_icon="🤖", layout="wide")
+# Template for answering questions
+template = """
+You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+Question: {question} 
+Context: {context} 
+Answer:
+"""
 
-st.title("🤖 AI Chatbot with Q&A & Appointment Booking")
+# Initialize models
+embeddings = OllamaEmbeddings(model="deepseek-r1:7b")
+vector_store = InMemoryVectorStore(embeddings)
+model = OllamaLLM(model="deepseek-r1:7b")
 
-# Sidebar for file upload
-st.sidebar.header("📄 Upload Documents")
-uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"])
+# Chat engine initialization
+llm_engine = ChatOllama(
+    model="deepseek-r1:7b", base_url="http://localhost:11434", temperature=0.3
+)
 
-if uploaded_file:
-    with st.spinner("Processing document..."):
-        # Save the uploaded file temporarily
-        with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-            temp_file.write(uploaded_file.getvalue())
-            temp_file_path = temp_file.name
+# System prompt configuration
+system_prompt = SystemMessagePromptTemplate.from_template(
+    "You are an expert AI coding assistant. Provide concise, correct solutions "
+    "with strategic print statements for debugging. Always respond in English."
+)
 
-        # Load the PDF using the saved file path
-        loader = PyPDFLoader(temp_file_path)
-        pages = loader.load_and_split()
+# Session state management for chat
+if "message_log" not in st.session_state:
+    st.session_state.message_log = [
+        {"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}
+    ]
 
-        # Initialize HuggingFaceEmbeddings without passing api_key directly
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+
+# Custom CSS styling
+def apply_custom_css():
+    st.markdown(
+        """
+    <style>
+        .main {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .sidebar .sidebar-content {
+            background-color: #2d2d2d;
+        }
+        .stTextInput textarea {
+            color: #ffffff !important;
+        }
+        .stSelectbox div[data-baseweb="select"] {
+            color: white !important;
+            background-color: #3d3d3d !important;
+        }
+        .stSelectbox svg {
+            fill: white !important;
+        }
+        .stSelectbox option {
+            background-color: #2d2d2d !important;
+            color: white !important;
+        }
+        div[role="listbox"] div {
+            background-color: #2d2d2d !important;
+            color: white !important;
+        }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+# Sidebar configuration
+def configure_sidebar():
+    with st.sidebar:
+        st.header("⚙️ Configuration")
+        selected_model = st.selectbox(
+            "Choose Model", ["deepseek-r1:7b", "deepseek-r1:7b"], index=0
         )
-        vector_store = FAISS.from_documents(pages, embeddings)
+        st.divider()
+        st.markdown("### Model Capabilities")
+        st.markdown(
+            """
+        - 🐍 Python Expert
+        - 🐞 Debugging Assistant
+        - 📝 Code Documentation
+        - 💡 Solution Design
+        """
+        )
+        st.divider()
+        st.markdown(
+            "Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)"
+        )
 
-    st.sidebar.success("Document uploaded & processed! ✅")
+        # PDF upload section
+        uploaded_file = st.file_uploader("Upload a PDF (Optional)", type=["pdf"])
+
+    return uploaded_file
 
 
-# Function to extract valid date
-def extract_date(user_input):
-    parsed_date = dateparser.parse(user_input)
-    if parsed_date:
-        return parsed_date.strftime("%Y-%m-%d")
+# Function to handle PDF upload and process the content
+def handle_pdf_upload(uploaded_file):
+    if uploaded_file:
+        file_path = os.path.join(pdf_dir, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Load and split PDF content asynchronously
+        with st.spinner("Processing PDF..."):
+            loader = PDFPlumberLoader(file_path)
+            documents = loader.load()
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000, chunk_overlap=200, add_start_index=True
+            )
+            split_documents = text_splitter.split_documents(documents)
+            vector_store.add_documents(split_documents)
+
+
+# Function to generate AI response
+def generate_ai_response(prompt_chain):
+    processing_pipeline = prompt_chain | llm_engine | StrOutputParser()
+    return processing_pipeline.invoke({})
+
+
+# Function to build the prompt chain
+def build_prompt_chain():
+    prompt_sequence = [system_prompt]
+    for msg in st.session_state.message_log:
+        if msg["role"] == "user":
+            prompt_sequence.append(
+                HumanMessagePromptTemplate.from_template(msg["content"])
+            )
+        elif msg["role"] == "ai":
+            prompt_sequence.append(
+                AIMessagePromptTemplate.from_template(msg["content"])
+            )
+    return ChatPromptTemplate.from_messages(prompt_sequence)
+
+
+# Function to retrieve relevant documents from the vector store based on the query
+def process_query_with_pdf(user_query):
+    retrieved_docs = vector_store.similarity_search(user_query)
+    if retrieved_docs:
+        context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = prompt | model
+        return chain.invoke({"question": user_query, "context": context})
     return None
 
 
-# Function to validate email & phone
-def validate_email(email):
-    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+# Function to handle the user query
+def handle_user_query(user_query, uploaded_file):
+    # Add user message to log
+    st.session_state.message_log.append({"role": "user", "content": user_query})
 
-
-def validate_phone(phone):
-    return re.match(r"^\+?\d{10,15}$", phone)
-
-
-# Chat interface
-st.subheader("💬 Chat with AI")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Display previous messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-user_input = st.chat_input("Ask something...")
-
-if user_input:
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    if "call me" in user_input.lower():
-        with st.form("appointment_form"):
-            name = st.text_input("📛 Name")
-            email = st.text_input("📧 Email")
-            phone = st.text_input("📞 Phone Number")
-            date_query = st.text_input("📅 Preferred Date (e.g., Next Monday)")
-            submitted = st.form_submit_button("Submit")
-
-            if submitted:
-                if not validate_email(email):
-                    st.error("Invalid email format! ❌")
-                elif not validate_phone(phone):
-                    st.error("Invalid phone number! ❌")
-                else:
-                    appointment_date = (
-                        extract_date(date_query) if date_query else "Not provided"
-                    )
-                    st.success(
-                        f"✅ Appointment booked for {name} on {appointment_date}. We will contact you at {phone}."
-                    )
+    # Check if a PDF has been uploaded and process
+    if uploaded_file:
+        handle_pdf_upload(uploaded_file)
+        ai_response = process_query_with_pdf(user_query)
+        if ai_response is None:
+            ai_response = model.invoke(user_query)
     else:
-        if vector_store:
-            # Perform similarity search to find the most relevant document
-            results = vector_store.similarity_search(user_input, k=1)
+        # If no PDF is uploaded, query the model directly
+        prompt_chain = build_prompt_chain()
+        ai_response = generate_ai_response(prompt_chain)
 
-            # Extract the content of the most relevant document
-            context = (
-                results[0].page_content  # Extract the page content from the results
-                if results
-                else "No relevant info found in the document."
-            )
+    # Add AI response to log
+    st.session_state.message_log.append({"role": "ai", "content": ai_response})
 
-            # Form the input for the LLM: combine user input and document context
-            input_for_llm = f"User question: {user_input}\nRelevant information from the document:\n{context}"
 
-        else:
-            input_for_llm = f"User question: {user_input}\nSorry, I don't have any documents to refer to."
+# Main Streamlit UI function
+def main():
+    apply_custom_css()
+    uploaded_file = configure_sidebar()
 
-        # Call Hugging Face model with the combined input
-        bot_response = llm(input_for_llm)
+    # Chat container on the main screen
+    chat_container = st.container()
 
-        with st.chat_message("assistant"):
-            st.markdown(bot_response)
+    # Display chat messages
+    with chat_container:
+        for message in st.session_state.message_log:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        st.session_state.messages.append({"role": "assistant", "content": bot_response})
+    # Chat input and processing
+    user_query = st.chat_input("Type your question here...")
+
+    # Handle user query
+    if user_query:
+        handle_user_query(user_query, uploaded_file)
+        # Rerun to update chat display
+        st.rerun()
+
+
+if __name__ == "__main__":
+    main()
