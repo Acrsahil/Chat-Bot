@@ -1,6 +1,6 @@
-# Project Name 🚀
+ # Chat - Bot 🚀
 
-Project Description.
+The PDF-Aware Chatbot is an intelligent assistant capable of processing uploaded PDF files and answering questions based on their content. Built using Streamlit, Ollama, and LangChain, this chatbot provides an interactive way to extract and retrieve relevant information from documents effortlessly.
 
 <p align="center">
   <a href="https://github.com/Acrsahil/Chat-Bot/graphs/contributors"><img src="https://img.shields.io/github/contributors/Acrsahil/Chat-Bot?style=for-the-badge" /></a>
