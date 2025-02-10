@@ -12,13 +12,6 @@ Project Description.
 
 ## Demo Video of the Project 🎥
 
-<video width="100%" autoplay muted loop>
-  <source src="https://github.com/Acrsahil/Chat-Bot/blob/main/demopj.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
-## Demo Video of the Project 🎥
-
 [![Demo Video](https://img.youtube.com/vi/2UxtNERVafM/0.jpg)](https://www.youtube.com/watch?v=2UxtNERVafM)
 
 
