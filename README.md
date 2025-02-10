@@ -43,6 +43,13 @@ Clone this repository to your local machine by running:
 ## Step 2: Install Dependencies
 
 Ensure you have the necessary dependencies installed.
+Install Ollama
+Ollama is required to run the chatbot. Install it using:
+
+     curl -fsSL https://ollama.com/install.sh | sh
+Install Deepseek-R1:7B Model
+      
+      ollama pull deepseek-r1:7b
 
 ## Step 3: Setup
 
