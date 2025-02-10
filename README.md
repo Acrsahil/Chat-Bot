@@ -17,6 +17,12 @@ Project Description.
   Your browser does not support the video tag.
 </video>
 
+## Demo Video of the Project 🎥
+
+[![Demo Video](https://img.youtube.com/vi/2UxtNERVafM/0.jpg)](https://www.youtube.com/watch?v=2UxtNERVafM)
+
+
+
 
 ## Table of Contents 📚
 
