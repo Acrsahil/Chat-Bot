@@ -11,6 +11,11 @@ Project Description.
 
 ![Banner Image](Path to Banner Image)
 
+## Demo Video of the Project 🎥
+
+[Watch the demo on Vimeo](https://youtu.be/2UxtNERVafM)
+
+
 ## Table of Contents 📚
 
 1. [Installation](#installation-%EF%B8%8F)
