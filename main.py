@@ -19,7 +19,7 @@ from langchain_core.prompts import (
 pdf_dir = "./pdfs/"
 os.makedirs(pdf_dir, exist_ok=True)
 
-# Template for answering questions
+# template for answering questions
 template = """
 You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
 Question: {question} 
@@ -46,7 +46,7 @@ system_prompt = SystemMessagePromptTemplate.from_template(
 # Session state management for chat
 if "message_log" not in st.session_state:
     st.session_state.message_log = [
-        {"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}
+        {"role": "ai", "content": "Hi! I Am your Ai. How can I help you ? 💻"}
     ]
 
 
@@ -89,16 +89,17 @@ def apply_custom_css():
 # Sidebar configuration
 def configure_sidebar():
     with st.sidebar:
-        st.header("⚙️ Configuration")
-        selected_model = st.selectbox(
-            "Choose Model", ["deepseek-r1:7b", "deepseek-r1:7b"], index=0
-        )
+        st.header("⚙️ File Learner Chat Bot ")
+        # selected_model = st.selectbox(
+        #     "Choose Model", ["deepseek-r1:7b", "deepseek-r1:7b"], index=0
+        # )
         st.divider()
-        st.markdown("### Model Capabilities")
+        st.markdown("## Model Capabilities")
         st.markdown(
             """
-        - 🐍 Python Expert
+        
         - 🐞 Debugging Assistant
+        - 🐞 Quick Reader
         - 📝 Code Documentation
         - 💡 Solution Design
         """
@@ -153,7 +154,7 @@ def build_prompt_chain():
     return ChatPromptTemplate.from_messages(prompt_sequence)
 
 
-# Function to retrieve relevant documents from the vector store based on the query
+# Function to retrieve relevant documents from the vector store!!
 def process_query_with_pdf(user_query):
     retrieved_docs = vector_store.similarity_search(user_query)
     if retrieved_docs:
@@ -164,7 +165,7 @@ def process_query_with_pdf(user_query):
     return None
 
 
-# Function to handle the user query
+# function to handle the user query
 def handle_user_query(user_query, uploaded_file):
     # Add user message to log
     st.session_state.message_log.append({"role": "user", "content": user_query})
@@ -184,7 +185,7 @@ def handle_user_query(user_query, uploaded_file):
     st.session_state.message_log.append({"role": "ai", "content": ai_response})
 
 
-# Main Streamlit UI function
+# main Streamlit UI function
 def main():
     apply_custom_css()
     uploaded_file = configure_sidebar()
@@ -198,13 +199,13 @@ def main():
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-    # Chat input and processing
+    # chat input and processing
     user_query = st.chat_input("Type your question here...")
 
     # Handle user query
     if user_query:
         handle_user_query(user_query, uploaded_file)
-        # Rerun to update chat display
+        # rerun to update display
         st.rerun()
 
 
