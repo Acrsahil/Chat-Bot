@@ -51,27 +51,6 @@ Install Deepseek-R1:7B Model
       
     ollama pull deepseek-r1:7b
 
-## Step 3: Setup
-
-Run the following command to set up the project:
-
-    ./install.py
-
-It will prompt you for necessary configurations (e.g., authentication).
-
-## Examples
-
-#### Example Command 1:
-
-    command
-
-Description for command 1.
-
-#### Example Command 2:
-
-    command
-
-Description for command 2.
 
 ## Requirements 📌
 
