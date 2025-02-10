@@ -13,7 +13,7 @@ Project Description.
 
 ## Demo Video of the Project 🎥
 
-[Watch the demo on Vimeo](https://youtu.be/2UxtNERVafM)
+[Watch the demo on Vimeo](https://github.com/Acrsahil/Chat-Bot/blob/main/demopj.mp4)
 
 
 ## Table of Contents 📚
