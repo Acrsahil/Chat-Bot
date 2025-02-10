@@ -12,7 +12,7 @@ Project Description.
 
 ## Demo Video of the Project 🎥
 
-[![Demo Video](https://img.youtube.com/vi/2UxtNERVafM/0.jpg)](https://www.youtube.com/watch?v=2UxtNERVafM)
+[![Demo Video](https://github.com/Acrsahil/Chat-Bot/blob/main/demopj-ezgif.com-video-to-gif-converter.gif)](https://www.youtube.com/watch?v=2UxtNERVafM)
 
 
 
