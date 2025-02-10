@@ -9,7 +9,6 @@ Project Description.
   <a href="https://github.com/Acrsahil/Chat-Bot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Acrsahil/Chat-Bot?style=for-the-badge&color=purple" /></a>
 </p>
 
-![Banner Image](Path to Banner Image)
 
 ## Demo Video of the Project 🎥
 
